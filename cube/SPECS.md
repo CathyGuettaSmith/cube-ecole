@@ -114,7 +114,7 @@ Navigation : barre en bas sur mobile, onglets en haut sur ordinateur. Routage pa
   Roux (le plus efficace en coups) est seulement cité. Les chapitres au-delà de l'objectif sont en retrait (« bonus ») mais restent accessibles. Aucun verrou.
 - **6 chapitres** : Les bases (notation + gestes), Ton premier cube (débutant), Passer sous la minute (2 étapes), F2L (8 leçons), PLL complet, OLL complet. Leçons de 2 à 7 algos, durée estimée de 0,6 min par mouvement et 1,6 min par algo.
 - **« Je maîtrise déjà »** (fait sur un vrai cube) :
-  - bouton « Je sais » sur chaque leçon ;
+  - bouton « J'y sais assez » sur chaque leçon ;
   - « Je connais déjà tout ce chapitre » ;
   - raccourci « Je connais les bases et la méthode débutant » (chapitres 1 et 2) ;
   - dans la Bibliothèque, « Je maîtrise » sur chaque algo.

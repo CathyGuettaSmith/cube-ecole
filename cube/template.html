@@ -1840,7 +1840,7 @@ function renderLearn(){
             <span class="ico">${lessonIcon(st, isNext)}</span>
             <span><span class="lt">${esc(l.title)}</span><span class="ls"><span>${l.cases.length} ${l.kind === 'move' ? 'mouvements' : 'algos'} · ${lessonMinutes(l)} min</span><span>· ${stLabel[st]}</span></span></span>
             ${isNext ? `<span class="go">Commencer${I.next}</span>` : `<span class="thumbs">${l.cases.slice(0, 4).map(id => `<span>${thumb(BYID[id], vIdx(BYID[id]))}</span>`).join('')}</span>`}
-          </button>${st === 'master' ? `<button type="button" class="knowBtn undo" data-unknow="${l.id}" title="Je ne maîtrise plus">Annuler</button>` : `<button type="button" class="knowBtn" data-know="${l.id}" title="Je sais déjà le faire sur mon cube">${I.check}<span>Je sais</span></button>`}</div>`;
+          </button>${st === 'master' ? `<button type="button" class="knowBtn undo" data-unknow="${l.id}" title="Je ne maîtrise plus">Annuler</button>` : `<button type="button" class="knowBtn" data-know="${l.id}" title="Je sais déjà le faire sur mon cube">${I.check}<span>J'y sais assez</span></button>`}</div>`;
         }).join('')}
         <div class="chFoot">
           ${hiddenN ? `<button type="button" class="linkBtn" data-showknown="${ch.id}">${I.check} ${hiddenN} leçon${hiddenN > 1 ? 's' : ''} maîtrisée${hiddenN > 1 ? 's' : ''} masquée${hiddenN > 1 ? 's' : ''} · Afficher</button>` : showKnown && ch.lessons.some(l => lessonState(l) === 'master') ? `<button type="button" class="linkBtn" data-showknown="${ch.id}">Masquer les leçons maîtrisées</button>` : '<span></span>'}
