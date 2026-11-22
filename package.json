@@ -1,0 +1,22 @@
+{
+  "name": "cube-ecole",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cube·École : entraîneur de Rubik's Cube, hébergé à partir du modèle d'app perso.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "build:cube": "node cube/build.js",
+    "validate:cube": "node cube/validate.js",
+    "icones": "python3 cube/icones.py"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "express": "^5.3.0",
+    "jose": "^6.2.18"
+  }
+}

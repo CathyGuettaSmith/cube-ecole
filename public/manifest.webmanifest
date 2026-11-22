@@ -1,0 +1,16 @@
+{
+  "name": "Cube·École — Entraîneur Rubik's Cube",
+  "short_name": "Cube·École",
+  "description": "Apprendre, mémoriser et réviser les algorithmes du Rubik's Cube.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDEFF2",
+  "theme_color": "#16181D",
+  "icons": [
+    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

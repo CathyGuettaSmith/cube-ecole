@@ -1,0 +1,58 @@
+# Vérifications lancées à chaque push et pull request.
+# Railway ne déploie que si ce workflow réussit (option « Wait for CI »).
+# Les actions sont fixées par empreinte (SHA) pour éviter qu'une version
+# modifiée à notre insu s'exécute.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Vérifier les algorithmes du cube
+        run: npm run validate:cube
+      - name: Vérifier que la page publiée correspond aux sources
+        run: |
+          npm run build:cube
+          git diff --exit-code -- public/index.html cube/Cube-Ecole.html
+      - run: npm test
+
+  securite:
+    name: Scan de sécurité (Trivy)
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Construire l'image
+        run: docker build -t app-a-scanner:${{ github.sha }} .
+      - name: Scanner l'image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: app-a-scanner:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
