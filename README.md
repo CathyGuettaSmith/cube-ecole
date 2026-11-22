@@ -9,7 +9,7 @@ Reprise du projet : `REPRISE-cube-ecole.md` ; specs détaillées : `cube/SPECS.m
 | Dossier | Contenu |
 |---|---|
 | `public/` | Ce qui est servi : `index.html` (**généré**, ne pas modifier à la main), service worker `sw.js`, manifeste et icônes |
-| `cube/` | Sources de l'appli (`template.html`, `engine.js`, `data.js`, `f2l.json`), construction et vérification des algorithmes |
+| `cube/` | Sources de l'appli (`template.html`, `engine.js`, `data.js`, `backup.js`, `f2l.json`), construction et vérification des algorithmes |
 | `cube/tests-interface/` | Anciens tests d'interface Playwright (chemins à adapter avant usage) |
 | `src/`, `test/` | Serveur du modèle (protection Cloudflare Access) et ses tests |
 
@@ -17,7 +17,7 @@ Reprise du projet : `REPRISE-cube-ecole.md` ; specs détaillées : `cube/SPECS.m
 
 - `npm run build:cube` : reconstruit `public/index.html` (et la copie hors ligne `cube/Cube-Ecole.html`) depuis les sources.
 - `npm run validate:cube` : vérifie les 57 OLL et 21 PLL par simulation ; échoue si un algorithme est cassé.
-- `npm test` : 31 tests (protection d'accès + page, manifeste, service worker, icônes).
+- `npm test` : 35 tests (protection d'accès + page, manifeste, service worker, icônes).
 - `npm run icones` : régénère les icônes (Python + Pillow).
 - `ACCESS_MODE=public npm start`, puis http://localhost:3000.
 
@@ -38,6 +38,10 @@ Rien d'autre : pas de Cloudflare Access, pas de clé d'IA. Adresse : celle gén�
 
 ## Données
 
-La progression reste dans le navigateur de chaque appareil (`localStorage`, clé
-`rubik-trainer-v2`). Le serveur ne stocke rien. Attention : la progression de l'artefact
+La progression est enregistrée automatiquement dans le navigateur de chaque appareil
+(`localStorage`, clé `rubik-trainer-v2`). Le serveur ne stocke rien. En bas de page,
+**Sauvegarder** produit un fichier `cube-ecole-progression-AAAA-MM-JJ.json` (feuille de partage
+sur iPhone, téléchargement ailleurs) et **Restaurer** le relit après confirmation, pour changer
+d'appareil ou récupérer après un effacement de Safari. L'appli demande aussi au navigateur de ne
+pas effacer ces données quand l'espace manque. Attention : la progression de l'artefact
 claude.ai ou d'une copie locale n'est pas reprise sur la version en ligne.

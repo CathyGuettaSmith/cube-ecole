@@ -4,6 +4,9 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
+import { createRequire } from 'node:module';
+
+const BACKUP = createRequire(import.meta.url)('../cube/backup.js');
 
 async function start(env) {
   const app = createApp({ config: loadConfig(env) });
@@ -26,6 +29,9 @@ describe('Cube·École en mode public', () => {
     assert.match(html, /Cube·École/);
     assert.match(html, /<link rel="manifest" href="manifest\.webmanifest">/);
     assert.match(html, /serviceWorker\.register\('sw\.js'\)/);
+    assert.match(html, /id="saveExport"/);
+    assert.match(html, /id="saveImport"/);
+    assert.match(html, /const BACKUP = /);
   });
 
   test('le manifeste d\'installation est valide', async () => {
@@ -55,5 +61,40 @@ describe('Cube·École en mode public', () => {
     for (const chemin of ['/cube/data.js', '/cube/template.html', '/package.json', '/.env.example']) {
       assert.equal((await srv.call(chemin)).status, 404, chemin);
     }
+  });
+});
+
+describe('Sauvegarde de la progression', () => {
+  const DEF = { srs: {}, star: {}, goal: 'sub1', streak: 0 };
+  const prog = { srs: { 'oll:21': { b: 3, due: 20400 } }, star: { 'pll:T': true }, goal: 'sub30', streak: 4 };
+
+  test('un fichier sauvegardé se restaure à l\'identique', () => {
+    const now = new Date('2026-11-22T10:00:00Z');
+    const r = BACKUP.parse(JSON.stringify(BACKUP.make(prog, now)), DEF);
+    assert.equal(r.ok, true);
+    assert.deepEqual(r.data, prog);
+    assert.equal(r.date.toISOString(), now.toISOString());
+    assert.equal(BACKUP.fileName(now), 'cube-ecole-progression-2026-11-22.json');
+  });
+
+  test('les réglages absents de la sauvegarde reprennent leur valeur par défaut', () => {
+    const r = BACKUP.parse(JSON.stringify(BACKUP.make({ srs: {} })), DEF);
+    assert.equal(r.ok, true);
+    assert.equal(r.data.goal, 'sub1');
+  });
+
+  test('un fichier qui n\'est pas une sauvegarde est refusé', () => {
+    const mauvais = ['', 'pas du json', '[]', '{}', JSON.stringify({ app: 'autre', format: 1, data: prog }),
+      JSON.stringify({ app: 'cube-ecole', format: 1, data: { star: {} } }),
+      JSON.stringify({ app: 'cube-ecole', format: 1, data: { srs: { x: { b: 9, due: 1 } } } }),
+      JSON.stringify({ app: 'cube-ecole', format: 1, data: { srs: {}, star: [] } }),
+      'x'.repeat(2000001)];
+    for (const texte of mauvais) assert.equal(BACKUP.parse(texte, DEF).ok, false, texte.slice(0, 60));
+  });
+
+  test('une sauvegarde d\'une version plus récente est refusée avec un message clair', () => {
+    const r = BACKUP.parse(JSON.stringify({ app: 'cube-ecole', format: 2, data: prog }), DEF);
+    assert.equal(r.ok, false);
+    assert.match(r.error, /version plus récente/);
   });
 });

@@ -19,12 +19,14 @@ ce que tu as fait, et dis-lui ce qu'elle doit faire ensuite (où cliquer, quoi v
 ## Spécifique à Cube·École
 
 - Lire `REPRISE-cube-ecole.md` puis `cube/SPECS.md` avant toute modification.
-- Modifier uniquement les sources de `cube/` (`template.html`, `engine.js`, `data.js`, `f2l.json`),
+- Modifier uniquement les sources de `cube/` (`template.html`, `engine.js`, `data.js`, `backup.js`, `f2l.json`),
   puis `npm run build:cube`. Ne jamais modifier `public/index.html` à la main.
 - Tout algorithme ajouté ou modifié doit être vérifié par simulation : `npm run validate:cube`.
 - Le service worker (`public/sw.js`) charge d'abord le réseau : une nouvelle version arrive
   seule dès que le téléphone est en ligne. Incrémenter `CACHE` (`cube-ecole-v2`…) seulement
   si la liste des fichiers mis en cache change.
+- Le format du fichier de sauvegarde (`cube/backup.js`) est versionné (`format`) : le changer
+  impose de continuer à relire les anciens fichiers.
 - Les scripts de `cube/` sont en CommonJS (`cube/package.json`) ; le serveur est en modules ES.
 
 ## Construire l'app

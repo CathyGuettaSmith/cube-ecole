@@ -622,6 +622,13 @@ select{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);
 .lgB{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:2px 9px;font-size:12px;font-weight:700;color:var(--muted)}
 html:not(.fing) .lgB[data-lg="sens"],html.fing .lgB[data-lg="doigts"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
+.saveBox{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.saveBox b{color:var(--ink);font-size:13.5px;margin-right:auto}
+.saveBox .acts{display:flex;gap:8px}
+.saveBox .btn{min-height:40px;padding:8px 14px;font-size:14px}
+.saveMsg{flex-basis:100%;font-weight:600;color:var(--ink)}
+.saveMsg.err{color:var(--accent-ink)}
+.saveMsg:empty{display:none}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -672,7 +679,11 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
     </aside>
   </div>
 </main>
-<div class="wrap"><footer>Orientation : jaune en haut, vert devant, orange à droite. Notation WCA. Chaque algorithme a été vérifié par simulation ; vignettes et flèches sont calculées à partir de l'algorithme. Ta progression reste dans ce navigateur.</footer></div>
+<div class="wrap"><footer>Orientation : jaune en haut, vert devant, orange à droite. Notation WCA. Chaque algorithme a été vérifié par simulation ; vignettes et flèches sont calculées à partir de l'algorithme. Ta progression est enregistrée automatiquement sur cet appareil.
+  <div class="saveBox"><b>Changer d’appareil ou effacer Safari ?</b>
+    <span class="acts"><button class="btn" type="button" id="saveExport">Sauvegarder</button><button class="btn" type="button" id="saveImport">Restaurer</button></span>
+    <input type="file" id="saveFile" accept=".json,application/json" hidden>
+    <p class="saveMsg" id="saveMsg" role="status" aria-live="polite"></p></div></footer></div>
 
 <nav class="bottom" id="bottomNav" aria-label="Navigation"></nav>
 
@@ -689,6 +700,7 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 <script>
 /*ENGINE*/
 /*DATA*/
+/*BACKUP*/
 const F2L_LIST = /*F2L*/;
 </script>
 <script>
@@ -729,7 +741,8 @@ const I = {
 
 // ---------- Stockage (dans ce navigateur) ----------
 const KEY = 'rubik-trainer-v2';
-let S = { srs:{}, star:{}, v:{}, speed:'mid', goal:'sub1', streak:0, lastDay:null, libSet:'oll2', done:{}, open:{} };
+const DEFAULT_S = { srs:{}, star:{}, v:{}, speed:'mid', goal:'sub1', streak:0, lastDay:null, libSet:'oll2', done:{}, open:{} };
+let S = JSON.parse(JSON.stringify(DEFAULT_S));
 try {
   const raw = localStorage.getItem(KEY);
   if (raw) S = Object.assign(S, JSON.parse(raw));
@@ -2316,6 +2329,41 @@ function closeLibPanel(){ if (libPlayer) libPlayer.stop(); if (libPrac) libPrac.
 $('#libClose').onclick = closeLibPanel;
 $('#lpStar').onclick = () => { const id = libCur.id; S.star[id] = !S.star[id]; if (!S.star[id]) delete S.star[id]; save(); $('#lpStar').setAttribute('aria-pressed', !!S.star[id]); renderLibraryGridOnly(); };
 $('#sortSel').onchange = e => { sort = e.target.value; renderLibrary(); };
+
+// ---------- Sauvegarde de la progression dans un fichier ----------
+function saveMsg(txt, err){ const m = $('#saveMsg'); m.textContent = txt; m.classList.toggle('err', !!err); }
+$('#saveExport').onclick = async () => {
+  const now = new Date(), name = BACKUP.fileName(now);
+  const blob = new Blob([JSON.stringify(BACKUP.make(S, now))], { type:'application/json' });
+  try {
+    const file = new File([blob], name, { type:'application/json' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      await navigator.share({ files:[file], title:'Progression Cube·École' });
+      saveMsg('Sauvegarde prête : garde ce fichier (Fichiers, e-mail…) pour la restaurer plus tard.');
+      return;
+    }
+  } catch(e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  saveMsg(`Fichier « ${name} » enregistré dans tes téléchargements.`);
+};
+$('#saveImport').onclick = () => { $('#saveFile').value = ''; $('#saveFile').click(); };
+$('#saveFile').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  let text = '';
+  try { text = await f.text(); } catch(err) {}
+  const r = BACKUP.parse(text, DEFAULT_S);
+  if (!r.ok) { saveMsg(r.error, true); return; }
+  const quand = r.date ? ` du ${r.date.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}` : '';
+  if (!confirm(`Remplacer ta progression actuelle par la sauvegarde${quand} ?`)) return;
+  S = r.data;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(err) { saveMsg("Impossible d'enregistrer sur cet appareil (navigation privée ?).", true); return; }
+  location.reload();
+};
+// Demande au navigateur de ne pas effacer la progression quand l'espace manque.
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {}); } catch(e) {}
 
 // ---------- Démarrage ----------
 document.documentElement.classList.toggle('fing', !!S.fingers);

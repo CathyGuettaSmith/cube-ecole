@@ -622,6 +622,13 @@ select{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);
 .lgB{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:2px 9px;font-size:12px;font-weight:700;color:var(--muted)}
 html:not(.fing) .lgB[data-lg="sens"],html.fing .lgB[data-lg="doigts"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
+.saveBox{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.saveBox b{color:var(--ink);font-size:13.5px;margin-right:auto}
+.saveBox .acts{display:flex;gap:8px}
+.saveBox .btn{min-height:40px;padding:8px 14px;font-size:14px}
+.saveMsg{flex-basis:100%;font-weight:600;color:var(--ink)}
+.saveMsg.err{color:var(--accent-ink)}
+.saveMsg:empty{display:none}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -672,7 +679,11 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
     </aside>
   </div>
 </main>
-<div class="wrap"><footer>Orientation : jaune en haut, vert devant, orange à droite. Notation WCA. Chaque algorithme a été vérifié par simulation ; vignettes et flèches sont calculées à partir de l'algorithme. Ta progression reste dans ce navigateur.</footer></div>
+<div class="wrap"><footer>Orientation : jaune en haut, vert devant, orange à droite. Notation WCA. Chaque algorithme a été vérifié par simulation ; vignettes et flèches sont calculées à partir de l'algorithme. Ta progression est enregistrée automatiquement sur cet appareil.
+  <div class="saveBox"><b>Changer d’appareil ou effacer Safari ?</b>
+    <span class="acts"><button class="btn" type="button" id="saveExport">Sauvegarder</button><button class="btn" type="button" id="saveImport">Restaurer</button></span>
+    <input type="file" id="saveFile" accept=".json,application/json" hidden>
+    <p class="saveMsg" id="saveMsg" role="status" aria-live="polite"></p></div></footer></div>
 
 <nav class="bottom" id="bottomNav" aria-label="Navigation"></nav>
 
@@ -970,6 +981,53 @@ const ALG_DATA = {
 };
 
 
+// ===== Sauvegarde de la progression dans un fichier =====
+// La progression vit dans le navigateur (localStorage). Ce module fabrique un fichier
+// de sauvegarde et relit un tel fichier, en refusant tout ce qui n'en est pas un.
+const BACKUP = (() => {
+  const APP = 'cube-ecole';
+  const FORMAT = 1;
+  const OBJETS = ['srs', 'star', 'v', 'done', 'open', 'prac', 'showKnown'];
+  const MAX = 2000000; // un vrai fichier fait quelques dizaines de Ko
+
+  const estObjet = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+
+  function make(state, now) {
+    return { app: APP, format: FORMAT, date: (now || new Date()).toISOString(), data: state };
+  }
+
+  function fileName(now) {
+    const d = now || new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `cube-ecole-progression-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.json`;
+  }
+
+  // Renvoie { ok:true, data, date } ou { ok:false, error } (message pour la personne).
+  function parse(text, defaults) {
+    const refus = { ok: false, error: "Ce fichier n'est pas une sauvegarde de Cube·École." };
+    if (typeof text !== 'string' || text.length > MAX) return refus;
+    let b;
+    try { b = JSON.parse(text); } catch (e) { return refus; }
+    if (!estObjet(b) || b.app !== APP || !estObjet(b.data)) return refus;
+    if (typeof b.format !== 'number' || b.format > FORMAT) {
+      return { ok: false, error: 'Cette sauvegarde vient d’une version plus récente de Cube·École. Mets l’appli à jour puis réessaie.' };
+    }
+    const d = b.data;
+    if (!estObjet(d.srs)) return refus;
+    for (const k of OBJETS) if (k in d && !estObjet(d[k])) return refus;
+    for (const id in d.srs) {
+      const e = d.srs[id];
+      if (!estObjet(e) || !Number.isInteger(e.b) || e.b < 1 || e.b > 6 || !Number.isInteger(e.due)) return refus;
+    }
+    const data = Object.assign(JSON.parse(JSON.stringify(defaults || {})), d);
+    const date = typeof b.date === 'string' && !Number.isNaN(Date.parse(b.date)) ? new Date(b.date) : null;
+    return { ok: true, data, date };
+  }
+
+  return { make, fileName, parse };
+})();
+
+
 const F2L_LIST = [["Coin et arête en haut",["R U R'"]],["Coin et arête en haut",["F' U' F","y' R' U' R"]],["Coin et arête en haut",["U R U' R'"]],["Coin et arête en haut",["U' F' U F","y' U' R' U R"]],["Coin et arête en haut",["F' U F U2 R U R'"]],["Coin et arête en haut",["R U' R' U2 F' U' F"]],["Coin et arête en haut",["U' R U R' U2 R U' R'"]],["Coin et arête en haut",["U' R U2 R' U2 R U' R'","U R U2 R' U2 R U' R'"]],["Coin et arête en haut",["U' R U R' U R U R'"]],["Coin et arête en haut",["U' R U' R' U R U R'"]],["Coin et arête en haut",["d R' U' R U2 R' U R","U F' U' F U2 F' U F"]],["Coin et arête en haut",["d R' U2 R U2 R' U R","y' U R' U2 R U2 R' U R"]],["Coin et arête en haut",["U' R U' R' U F' U' F"]],["Coin et arête en haut",["d R' U R U' R' U' R","y' U R' U R U' R' U' R"]],["Coin et arête en haut",["U' R U2 R' d R' U' R"]],["Coin et arête en haut",["U F' U2 F d' F U F'","y' U R' U2 R y U' R U R'"]],["Coin blanc dessus",["R U2 R' U' R U R'"]],["Coin blanc dessus",["y' R' U2 R U R' U' R"]],["Coin blanc dessus",["U R U2 R' U R U' R'","U2 R U2 R' U R U' R'"]],["Coin blanc dessus",["U2 R U R' U R U' R'"]],["Coin blanc dessus",["y' U' R' U2 R U' R' U R"]],["Coin blanc dessus",["y' U2 R' U' R U' R' U R"]],["Coin blanc dessus",["R U R' U2 R U R' U' R U R'","U R U' R' U' R U' R' U R U' R'"]],["Coin blanc dessus",["y' R' U' R U2 R' U' R U R' U' R","y' U' R' U R U R' U R U' R' U R"]],["Arête dans le slot",["F' U' F U R U' R'"]],["Arête dans le slot",["R U R' U' F' U F","U2 R U' R' U' F' U' F"]],["Arête dans le slot",["U' R U' R' U2 R U' R'","y' U' R' U' R U2 R' U' R"]],["Arête dans le slot",["U R U R' U2 R U R'","y' U R' U R U2 R' U R"]],["Arête dans le slot",["U' R' F R F' R U' R'","U' R U' R' d R' U R"]],["Arête dans le slot",["R U R' U' R U R' U' R U R'","F' U' F U F' U' F U F' U' F"]],["Coin dans le slot",["R U' R' F' U' F"]],["Coin dans le slot",["R U' R' U R U' R'","U R U' R' U R U' R'"]],["Coin dans le slot",["R U R' U' R U R'"]],["Coin dans le slot",["R U' R' U' F' U F","U R U' R' U' F' U F"]],["Coin dans le slot",["y' R' U R U' R' U R","R U R' U' F R' F' R"]],["Coin dans le slot",["U' F' U F U R U' R'"]],["Coin et arête dans le slot",["R2 U2 F R2 F' U2 R' U R'","R U' R' d R' U2 R U2 R' U R"]],["Coin et arête dans le slot",["R F U R U' R' F' U' R'"]],["Coin et arête dans le slot",["R U' R' U R U2 R' U R U' R'","U F' U' F U F' U2 F U F' U' F"]],["Coin et arête dans le slot",["R U' R' U' R U R' U2 R U' R'","R U R' U' R U2 R' U' R U R'"]],["Coin et arête dans le slot",["R U R' U' R U' R' U2 F' U' F"]]];
 </script>
 <script>
@@ -1010,7 +1068,8 @@ const I = {
 
 // ---------- Stockage (dans ce navigateur) ----------
 const KEY = 'rubik-trainer-v2';
-let S = { srs:{}, star:{}, v:{}, speed:'mid', goal:'sub1', streak:0, lastDay:null, libSet:'oll2', done:{}, open:{} };
+const DEFAULT_S = { srs:{}, star:{}, v:{}, speed:'mid', goal:'sub1', streak:0, lastDay:null, libSet:'oll2', done:{}, open:{} };
+let S = JSON.parse(JSON.stringify(DEFAULT_S));
 try {
   const raw = localStorage.getItem(KEY);
   if (raw) S = Object.assign(S, JSON.parse(raw));
@@ -2597,6 +2656,41 @@ function closeLibPanel(){ if (libPlayer) libPlayer.stop(); if (libPrac) libPrac.
 $('#libClose').onclick = closeLibPanel;
 $('#lpStar').onclick = () => { const id = libCur.id; S.star[id] = !S.star[id]; if (!S.star[id]) delete S.star[id]; save(); $('#lpStar').setAttribute('aria-pressed', !!S.star[id]); renderLibraryGridOnly(); };
 $('#sortSel').onchange = e => { sort = e.target.value; renderLibrary(); };
+
+// ---------- Sauvegarde de la progression dans un fichier ----------
+function saveMsg(txt, err){ const m = $('#saveMsg'); m.textContent = txt; m.classList.toggle('err', !!err); }
+$('#saveExport').onclick = async () => {
+  const now = new Date(), name = BACKUP.fileName(now);
+  const blob = new Blob([JSON.stringify(BACKUP.make(S, now))], { type:'application/json' });
+  try {
+    const file = new File([blob], name, { type:'application/json' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })) {
+      await navigator.share({ files:[file], title:'Progression Cube·École' });
+      saveMsg('Sauvegarde prête : garde ce fichier (Fichiers, e-mail…) pour la restaurer plus tard.');
+      return;
+    }
+  } catch(e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  saveMsg(`Fichier « ${name} » enregistré dans tes téléchargements.`);
+};
+$('#saveImport').onclick = () => { $('#saveFile').value = ''; $('#saveFile').click(); };
+$('#saveFile').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  let text = '';
+  try { text = await f.text(); } catch(err) {}
+  const r = BACKUP.parse(text, DEFAULT_S);
+  if (!r.ok) { saveMsg(r.error, true); return; }
+  const quand = r.date ? ` du ${r.date.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}` : '';
+  if (!confirm(`Remplacer ta progression actuelle par la sauvegarde${quand} ?`)) return;
+  S = r.data;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(err) { saveMsg("Impossible d'enregistrer sur cet appareil (navigation privée ?).", true); return; }
+  location.reload();
+};
+// Demande au navigateur de ne pas effacer la progression quand l'espace manque.
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {}); } catch(e) {}
 
 // ---------- Démarrage ----------
 document.documentElement.classList.toggle('fing', !!S.fingers);
