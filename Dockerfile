@@ -1,11 +1,11 @@
 # Étape 1 : installation des dépendances de production
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 # Étape 2 : image finale, minimale
-FROM node:22-alpine
+FROM node:26-alpine
 RUN apk --no-cache upgrade \
  # npm, npx, corepack et yarn ne servent pas à l'exécution : on les retire
  # pour réduire la surface d'attaque et les alertes du scan de sécurité.
